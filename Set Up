@@ -1,0 +1,5 @@
+To play a game of battleship:
+  1. First decide which implementation you want to use; UDP or TCP.
+  2. Once you have decided, run the corresponding server file. For example, if you chose UDP, then run the UDP_Server.java file.
+  3. Next, run two player-client files of the corresponding type, one for each player. For example, if you chose UDP, then run
+     the UDP_PlayerClient.java file.
