@@ -9,6 +9,7 @@ import java.net.Socket;
  * of the logic needed to play the game.
  * @author   Kyle McGlynn
  * @author   Ajinkya Kolhe
+ * @author Aneesh Deshmukh
  *
  */
 public class TCP_Server_Helper extends Thread {
@@ -27,16 +28,6 @@ public class TCP_Server_Helper extends Thread {
 	// objects
 	ObjectInputStream ois;
 	ObjectOutputStream oos;
-	
-	// Whose turn it currently is
-	static int turn = 0;
-	
-	// Determines whose turn it is
-	static int sign = 1;
-	
-	// Keeps track of who has completed
-	// setting up their ships.
-	static int setUp = 0;
 	
 	// If there is a problem on the main
 	// server side, before the game starts,
@@ -131,58 +122,77 @@ public class TCP_Server_Helper extends Thread {
 				
 				// Once the player's fleet is set up, 
 				// increment this value by one
-				setUp++;
+				server.markSetup(player);
 				
 				// Wait for the other player to set up
 				// their fleet
-				while( setUp != 2 ){}
-				
-				// So long as either player has at least one ship still
-				// afloat, the game continues
-				while( server.checkStatus() ) {
-					
-					// If it is this player's turn
-					if( turn == player ) {
-						
-						// Tell the player that the game
-						// is still going	
-						oos.writeObject(new Boolean(true));
-						
-						// Send the current player's ocean with their ships
-						oos.writeObject( server.printOcean( turn, true ) );
-						
-						// Send the waiting player's ocean without their
-						// ships. This is so that the guessing player
-						// can see their hits and misses.
-						oos.writeObject( server.printOcean( turn + sign, false ) );
-						
-						// Get the current player's desired target
-						int[] target = ( int[] ) ois.readObject();
-												
-						// Pass the target to the model. If it returns 
-						// true, then it hit, otherwise it is a miss.
-						if( server.checkHit(turn+sign, target, turn)){
-							oos.writeObject( new String( "Hit!" ) );
-						}
-						else {
-							oos.writeObject( new String( "Miss!" ) );
-						}
-						
-						// Change the turn
-						turn += sign;
-						sign *= -1;
-					}
+				int setupTimeout = 100000; // 100 seconds
+				int elapsedTime = 0;
+				while( !server.checkSetupComplete() && elapsedTime < setupTimeout) {
+					oos.writeObject( new String("Waiting for opponent") )
+					Thread.sleep(1000); // Sleep for 1000ms to avoid overloading CPU
+					elapsedTime += 1000;
 				}
+				if (elapsedTime >= setupTimeout) {
+					System.out.println("Timeout reached, setup incomplete.");
+				}
+				System.out.println(server.checkStatus());
 				
-				// Indicate to the player that the game is over
-				oos.writeObject( new Boolean( false ) );
-				
-				// Tell the player who won
-				oos.writeObject( server.victory() );
 			}
+
+			while( server.checkStatus() ) {
+				int setupTimeout = 100000; // 100 seconds
+				int elapsedTime = 0;
+
+				int turn = server.getTurn();
+				int sign = server.getSign();
+				// If it is this player's turn
+				if( turn == player ) {
+					elapsedTime = 0;
+
+					// Tell the player that the game
+					// is still going	
+					oos.writeObject(new Boolean(true));
+					
+					// Send the current player's ocean with their ships
+					oos.writeObject( server.printOcean( turn, true ) );
+					
+					// Send the waiting player's ocean without their
+					// ships. This is so that the guessing player
+					// can see their hits and misses.
+					oos.writeObject( server.printOcean( turn + sign, false ) );
+					
+					// Get the current player's desired target
+					int[] target = ( int[] ) ois.readObject();
+											
+					// Pass the target to the model. If it returns 
+					// true, then it hit, otherwise it is a miss.
+					if( server.checkHit(turn+sign, target, turn)){
+						oos.writeObject( new String( "Hit!" ) );
+					}
+					else {
+						oos.writeObject( new String( "Miss!" ) );
+					}
+
+					oos.writeObject( server.printOcean( turn + sign, false ) );
+					// Change the turn
+					server.changeTurn();
+				} else {
+					Thread.sleep(1000); // Sleep for 1000ms to avoid overloading CPU
+					elapsedTime += 1000;
+				}
+			}
+			
+			// Indicate to the player that the game is over
+			oos.writeObject( new Boolean( false ) );
+			
+			// Tell the player who won
+			oos.writeObject( server.victory() );
 		} catch ( IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

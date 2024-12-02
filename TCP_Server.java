@@ -12,7 +12,8 @@ import java.net.SocketTimeoutException;
  * helper threads via TCP.
  * @author   Kyle McGlynn
  * @author   Ajinkya Kolhe
- *
+ * @author Aneesh Deshmukh
+ * 
  */
 public class TCP_Server {
 	
@@ -28,6 +29,7 @@ public class TCP_Server {
 	
 	// The players
 	Player[] players = new Player[2];
+	int[] setupComplete = new int[2];
 				
 	// The boat and hit marks of the players
 	char[] boatMarks = { 'A', 'B' };
@@ -40,6 +42,12 @@ public class TCP_Server {
 	// The threads that shall handle the wireless connection
 	// between the server and the player
 	TCP_Server_Helper[] helpers = new TCP_Server_Helper[2];
+
+	// Whose turn it currently is
+	static int turn = 0;
+	
+	// Determines whose turn it is
+	static int sign = 1;
 	
 	/**
 	 * The constructor. It initializes the ServerSocket
@@ -92,7 +100,7 @@ public class TCP_Server {
 				
 				// Create a player object
 				players[player] = new Player( playerName, boatMarks[player], hitMarks[player] );
-				
+				setupComplete[player] = 0;
 				// Create a TCP_Communicator object and send it to the player
 				comms[player] = new TCP_Communicator( playerName );
 				
@@ -120,6 +128,10 @@ public class TCP_Server {
 			return false;
 		} 
 	}
+
+	public Player getPlayer(int player_id) {
+		return players[player_id];
+	}
 	
 	/**
 	 * This method sets up a game of BattleShip.
@@ -139,6 +151,7 @@ public class TCP_Server {
 			model.modelSetUp( players[0].shipMark, players[1].shipMark );
 			helpers[0].start();
 			helpers[1].start();
+
 			return true;
 		}
 		else{
@@ -181,6 +194,37 @@ public class TCP_Server {
 		// If the ship can be built, return true
 		return model.buildShip( player, row, column, direction );
 	}
+
+	/**
+	 * This method is used to mark when 
+	 * each player completes their setup.
+	 * 
+	 * @param	player  the numberic id of
+	 * 					the player who has
+	 * 					completed their setup
+	 * 
+	 * @return	boolean true on successful update
+	 */
+	public void markSetup(int player) {
+		setupComplete[player] = 1;
+	}
+
+	/**
+	 * This method is used to check if both 
+	 * players have completed their fleet setup
+	 * 
+	 * @return	boolean	true is both players have 
+	 * 					completed their setup
+	 */
+	public boolean checkSetupComplete() {
+		int player = 0;
+		boolean isComplete = true;
+		while(player != 2) {
+			isComplete &= setupComplete[player] == 1;
+			player++;
+		}
+		return isComplete;
+	}
 	
 	/**
 	 * Check to see if the game is still
@@ -191,6 +235,19 @@ public class TCP_Server {
 	 */
 	public boolean checkStatus() {
 		return model.checkStatus();
+	}
+
+	public int getTurn() {
+		return turn;
+	}
+
+	public int getSign() {
+		return sign;
+	}
+
+	public void changeTurn() {
+		turn += sign;
+		sign *= -1;
 	}
 	
 	/**
