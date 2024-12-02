@@ -25,6 +25,61 @@ public class TCP_PlayerClient {
 	// objects
 	ObjectOutputStream oos;
 	ObjectInputStream ois;
+
+	public void sendData(Object data) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+		try {
+            socket.setSoTimeout(10000);
+            Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
+            System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
+			long delay = acknowledgment.getTimestamp() - packetTimestamp;
+			System.out.println("Total Communication Time: " + delay + " ms");
+        } catch (SocketTimeoutException e) {
+            System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
+        }
+	}
+
+	public <T> Packet<T> receiveData() throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+
+		Packet<Void> acknowledgment = new Packet<>(receivedPacket.getPacketId(), true);
+		oos.writeObject(acknowledgment);
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method sets up the TCP connection
@@ -56,11 +111,12 @@ public class TCP_PlayerClient {
 			socket.setSoTimeout( 10000 );
 			
 			// Send the player name to the server
-			oos.writeObject(playerName);
+			sendData( playerName );
 			
 			// Get the TCP_Communicator object from the
 			// server
-			TCP_Communicator communicate = ( TCP_Communicator ) ois.readObject();
+			Packet<TCP_Communicator> packet = receiveData();
+			TCP_Communicator communicate = ( TCP_Communicator ) packet.getObjectData();
 			
 			// Return timeout on the socket to infinity
 			socket.setSoTimeout( 0 );

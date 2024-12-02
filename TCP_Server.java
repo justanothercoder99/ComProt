@@ -68,6 +68,66 @@ public class TCP_Server {
 		// and basic rules of the game.
 		model = new Model();
 	}
+
+	public void sendData(Object data, ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof TCP_Communicator) {
+            Packet<TCP_Communicator> packet = new Packet<>((TCP_Communicator) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+		try {
+            server.setSoTimeout(0);
+            Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
+            System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
+			long delay = acknowledgment.getTimestamp() - packetTimestamp;
+			System.out.println("Total Communication Time: " + delay + " ms");
+        } catch (SocketTimeoutException e) {
+            System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
+        }
+	}
+
+	public <T> Packet<T> receiveData(ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+
+		Packet<Void> acknowledgment = new Packet<>(receivedPacket.getPacketId(), true);
+		oos.writeObject(acknowledgment);
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method waits to receive a connection from two
@@ -96,7 +156,8 @@ public class TCP_Server {
 				ObjectOutputStream oos = new ObjectOutputStream( client.getOutputStream() );
 				
 				// The player's name
-				String playerName = (String) ois.readObject();
+				Packet<String> pkt = receiveData(oos, ois);
+				String playerName = (String) pkt.getObjectData();
 				
 				// Create a player object
 				players[player] = new Player( playerName, boatMarks[player], hitMarks[player] );
@@ -105,7 +166,7 @@ public class TCP_Server {
 				comms[player] = new TCP_Communicator( playerName );
 				
 				// Send a TCP_Communicator object
-				oos.writeObject( comms[player] );
+				sendData(comms[player], oos, ois);
 				
 				// Create a helper thread				
 				helpers[player] = new TCP_Server_Helper( player, client, this, ois, oos );

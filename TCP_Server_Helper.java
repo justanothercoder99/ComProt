@@ -2,6 +2,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
+import java.util.Arrays;
 
 /**
  * This class handles the connection to a
@@ -56,6 +58,61 @@ public class TCP_Server_Helper extends Thread {
 		this.ois = ois;
 		this.oos = oos;
 	}
+
+	public void sendData(Object data) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+		try {
+            client.setSoTimeout(10000);
+            Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
+            System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
+			long delay = acknowledgment.getTimestamp() - packetTimestamp;
+			System.out.println("Total Communication Time: " + delay + " ms");
+        } catch (SocketTimeoutException e) {
+            System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
+        }
+	}
+
+	public <T> Packet<T> receiveData() throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+
+		Packet<Void> acknowledgment = new Packet<>(receivedPacket.getPacketId(), true);
+		oos.writeObject(acknowledgment);
+		return receivedPacket;
+	}
 	
 	/** 
 	 * This method creates a fleet 
@@ -78,21 +135,22 @@ public class TCP_Server_Helper extends Thread {
 				
 				// Tell the player which ship number
 				// it is working on
-				oos.writeObject( new Integer(index) );
+				sendData( new Integer(index) );
 				
 				// Get the desired starting point and direction
-				Object[] inputs = ( Object[] ) ois.readObject();
+				Packet<Object> packet = receiveData();
+				Object[] inputs = packet.getObjectsArray();
 				
 				
 				// If the ship can be built, increment index
 				if( server.fleetSetUp( player, inputs ) ) {
 					
 					// If the ship was built, return true
-					oos.writeObject( new Boolean(true) );
+					sendData( new Boolean(true) );
 					index++;
 				}
 				else{
-					oos.writeObject( new Boolean(false) );
+					sendData( new Boolean(false) );
 				}
 			}
 		} catch ( IOException e) {
@@ -112,7 +170,7 @@ public class TCP_Server_Helper extends Thread {
 		try{
 			
 			// Tell the player we are set to play
-			oos.writeObject( new Boolean( play ) );
+			sendData( new Boolean( play ) );
 			
 			// If we are ready to play, play
 			if( play ) {
@@ -135,7 +193,7 @@ public class TCP_Server_Helper extends Thread {
 				if (elapsedTime >= setupTimeout) {
 					System.out.println("Timeout reached, setup incomplete.");
 				}
-				oos.writeObject( new Boolean(true) );
+				sendData( new Boolean(true) );
 			}
 
 			while( server.checkStatus() ) {
@@ -150,32 +208,33 @@ public class TCP_Server_Helper extends Thread {
 
 					// Tell the player that the game
 					// is still going	
-					oos.writeObject(new Boolean(true));
+					sendData(new Boolean(true));
 					
 					// Send the current player's ocean with their ships
-					oos.writeObject( new String("Your Fleet") );
-					oos.writeObject( server.printOcean( turn, true ) );
+					sendData( new String("Your Fleet") );
+					sendData( server.printOcean( turn, true ) );
 					
 					// Send the waiting player's ocean without their
 					// ships. This is so that the guessing player
 					// can see their hits and misses.
-					oos.writeObject( new String("Your Attacks") );
-					oos.writeObject( server.printOcean( turn + sign, false ) );
+					sendData( new String("Your Attacks") );
+					sendData( server.printOcean( turn + sign, false ) );
 					
 					// Get the current player's desired target
-					int[] target = ( int[] ) ois.readObject();
+					Packet<Integer> packet = receiveData();
+					int[] target = Arrays.stream(packet.getObjectsArray()).mapToInt(Integer::intValue).toArray();
 											
 					// Pass the target to the model. If it returns 
 					// true, then it hit, otherwise it is a miss.
 					if( server.checkHit(turn+sign, target, turn)){
-						oos.writeObject( new String( "Hit!" ) );
+						sendData( new String( "Hit!" ) );
 					}
 					else {
-						oos.writeObject( new String( "Miss!" ) );
+						sendData( new String( "Miss!" ) );
 					}
 
-					oos.writeObject( new String("Opponent Ocean") );
-					oos.writeObject( server.printOcean( turn + sign, false ) );
+					sendData( new String("Opponent Ocean") );
+					sendData( server.printOcean( turn + sign, false ) );
 					// Change the turn
 					server.changeTurn();
 				} else {
@@ -185,10 +244,10 @@ public class TCP_Server_Helper extends Thread {
 			}
 			
 			// Indicate to the player that the game is over
-			oos.writeObject( new Boolean( false ) );
+			sendData( new Boolean( false ) );
 			
 			// Tell the player who won
-			oos.writeObject( server.victory() );
+			sendData( server.victory() );
 		} catch ( IOException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
