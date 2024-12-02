@@ -114,7 +114,7 @@ public class TCP_Communicator implements Serializable{
 							
 				// Flag that controls if the game
 				// is still being played
-				boolean game = true;
+				boolean game = (boolean) ois.readObject();
 				
 				// So long as no one has won, keep playing
 				while( game ) {
@@ -136,6 +136,9 @@ public class TCP_Communicator implements Serializable{
 						
 						// See if it was a hit or miss
 						view.message( ( String ) ois.readObject() );
+
+						// The player's guesses
+						view.message( (String) ois.readObject() );
 					}
 					else{
 						game = false;

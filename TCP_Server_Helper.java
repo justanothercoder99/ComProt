@@ -126,22 +126,20 @@ public class TCP_Server_Helper extends Thread {
 				
 				// Wait for the other player to set up
 				// their fleet
-				int setupTimeout = 100000; // 100 seconds
+				int setupTimeout = 15000; // 15 seconds
 				int elapsedTime = 0;
 				while( !server.checkSetupComplete() && elapsedTime < setupTimeout) {
-					oos.writeObject( new String("Waiting for opponent") );
 					Thread.sleep(1000); // Sleep for 1000ms to avoid overloading CPU
 					elapsedTime += 1000;
 				}
 				if (elapsedTime >= setupTimeout) {
 					System.out.println("Timeout reached, setup incomplete.");
 				}
-				System.out.println(server.checkStatus());
-				
+				oos.writeObject( new Boolean(true) );
 			}
 
 			while( server.checkStatus() ) {
-				int setupTimeout = 100000; // 100 seconds
+				int setupTimeout = 10000; // 10 seconds
 				int elapsedTime = 0;
 
 				int turn = server.getTurn();
