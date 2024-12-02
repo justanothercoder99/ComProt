@@ -96,8 +96,8 @@ public class TCP_Communicator implements Serializable{
             socket.setSoTimeout(30000);
             Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
             System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
-			long delay = acknowledgment.getTimestamp() - packetTimestamp;
-			System.out.println("Total Communication Time: " + delay + " ms");
+			long delay = System.currentTimeMillis() - packetTimestamp;
+			System.out.println("Total Round Trip Time: " + delay + " ms");
         } catch (SocketTimeoutException e) {
             System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
         }
