@@ -84,7 +84,7 @@ public class TCP_Server {
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
         } else if (data instanceof String) {
-            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+            Packet<String> packet = new Packet<>((String) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
@@ -118,6 +118,7 @@ public class TCP_Server {
 	}
 
 	public <T> Packet<T> receiveData(ObjectOutputStream oos, ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		server.setSoTimeout(0);
 		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
 		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
 

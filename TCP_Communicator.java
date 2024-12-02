@@ -69,13 +69,13 @@ public class TCP_Communicator implements Serializable{
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else if (data instanceof Integer[]) {
-            Packet<Integer> packet = new Packet<>((Integer[]) data);
+        } else if (data instanceof int[]) {
+            Packet<int[]> packet = new Packet<>((int[]) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
         } else if (data instanceof String) {
-            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+            Packet<String> packet = new Packet<>((String) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
@@ -93,7 +93,7 @@ public class TCP_Communicator implements Serializable{
 
 		System.out.println("Sent Packet ID: " + packetId);
 		try {
-            socket.setSoTimeout(10000);
+            socket.setSoTimeout(30000);
             Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
             System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
 			long delay = acknowledgment.getTimestamp() - packetTimestamp;
@@ -104,6 +104,7 @@ public class TCP_Communicator implements Serializable{
 	}
 
 	public <T> Packet<T> receiveData() throws IOException, ClassNotFoundException {
+		socket.setSoTimeout(30000);
 		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
 		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
 

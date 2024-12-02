@@ -74,7 +74,7 @@ public class TCP_Server_Helper extends Thread {
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
         } else if (data instanceof String) {
-            Packet<String> packet = new Packet<>(new String[]{(String) data}); // Wrap the string in a string array
+            Packet<String> packet = new Packet<>((String) data); // Wrap the string in a string array
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
@@ -92,7 +92,7 @@ public class TCP_Server_Helper extends Thread {
 
 		System.out.println("Sent Packet ID: " + packetId);
 		try {
-            client.setSoTimeout(10000);
+            client.setSoTimeout(30000);
             Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
             System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
 			long delay = acknowledgment.getTimestamp() - packetTimestamp;
@@ -103,6 +103,7 @@ public class TCP_Server_Helper extends Thread {
 	}
 
 	public <T> Packet<T> receiveData() throws IOException, ClassNotFoundException {
+		client.setSoTimeout(30000);
 		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
 		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
 
@@ -221,8 +222,8 @@ public class TCP_Server_Helper extends Thread {
 					sendData( server.printOcean( turn + sign, false ) );
 					
 					// Get the current player's desired target
-					Packet<Integer> packet = receiveData();
-					int[] target = Arrays.stream(packet.getObjectsArray()).mapToInt(Integer::intValue).toArray();
+					Packet<int[]> packet = receiveData();
+					int[] target = packet.getObjectData();
 											
 					// Pass the target to the model. If it returns 
 					// true, then it hit, otherwise it is a miss.
