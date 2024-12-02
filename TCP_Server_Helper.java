@@ -153,11 +153,13 @@ public class TCP_Server_Helper extends Thread {
 					oos.writeObject(new Boolean(true));
 					
 					// Send the current player's ocean with their ships
+					oos.writeObject( new String("Your Fleet") );
 					oos.writeObject( server.printOcean( turn, true ) );
 					
 					// Send the waiting player's ocean without their
 					// ships. This is so that the guessing player
 					// can see their hits and misses.
+					oos.writeObject( new String("Your Attacks") );
 					oos.writeObject( server.printOcean( turn + sign, false ) );
 					
 					// Get the current player's desired target
@@ -172,6 +174,7 @@ public class TCP_Server_Helper extends Thread {
 						oos.writeObject( new String( "Miss!" ) );
 					}
 
+					oos.writeObject( new String("Opponent Ocean") );
 					oos.writeObject( server.printOcean( turn + sign, false ) );
 					// Change the turn
 					server.changeTurn();

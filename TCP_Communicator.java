@@ -124,11 +124,12 @@ public class TCP_Communicator implements Serializable{
 					// be this player's turn. If the value is 
 					// false, then the game is over.
 					if( (boolean) ois.readObject() ){
-						
 						// The player's ocean
+						view.message( (String) ois.readObject() );
 						view.message( (String) ois.readObject() );
 						
 						// The player's guesses
+						view.message( (String) ois.readObject() );
 						view.message( (String) ois.readObject() );
 						
 						// Get desired target
@@ -138,6 +139,7 @@ public class TCP_Communicator implements Serializable{
 						view.message( ( String ) ois.readObject() );
 
 						// The player's guesses
+						view.message( (String) ois.readObject() );
 						view.message( (String) ois.readObject() );
 					}
 					else{

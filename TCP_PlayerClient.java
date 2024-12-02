@@ -49,7 +49,7 @@ public class TCP_PlayerClient {
 			oos = new ObjectOutputStream( socket.getOutputStream() );
 			ois = new ObjectInputStream( socket.getInputStream() );
 			
-			// Set the timeout to 1000 milliseconds. If 1000 milliseconds
+			// Set the timeout to 10000 milliseconds. If 10000 milliseconds
 			// pass while waiting to receive an answer from the server,
 			// a SocketException will be thrown and this program will
 			// terminate
