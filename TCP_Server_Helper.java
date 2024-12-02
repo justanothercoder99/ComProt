@@ -129,7 +129,7 @@ public class TCP_Server_Helper extends Thread {
 				int setupTimeout = 100000; // 100 seconds
 				int elapsedTime = 0;
 				while( !server.checkSetupComplete() && elapsedTime < setupTimeout) {
-					oos.writeObject( new String("Waiting for opponent") )
+					oos.writeObject( new String("Waiting for opponent") );
 					Thread.sleep(1000); // Sleep for 1000ms to avoid overloading CPU
 					elapsedTime += 1000;
 				}
