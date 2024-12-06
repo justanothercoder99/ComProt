@@ -11,8 +11,6 @@ import java.net.UnknownHostException;
  * This class is a plain client class that
  * connects via TCP to a game server to 
  * play some game.
- * @author   Kyle McGlynn
- * @author   Ajinkya Kolhe
  *
  */
 public class TCP_PlayerClient {

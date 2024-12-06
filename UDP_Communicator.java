@@ -11,8 +11,6 @@ import java.net.InetAddress;
 /**
  * This class handles communication via UDP
  * between the server and a player.
- * @author   Ajinkya Kolhe
- * @author   Kyle McGlynn
  *
  */
 @SuppressWarnings("serial")

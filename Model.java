@@ -1,8 +1,6 @@
 /**
  * This class contains the state and basic
  * rules of a game of battle ship.
- * @author   Kyle McGlynn
- * @author   Ajinkya Kolhe
  */
 public class Model {
 	

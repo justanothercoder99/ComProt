@@ -3,9 +3,6 @@ import java.util.Arrays;
 /**
  * The purpose of this class is to 
  * create ships in a game of battleship.
- * 
- * @author Ajinkya Kolhe
- * @author Kyle McGlynn
  */
 
 public class Ship {

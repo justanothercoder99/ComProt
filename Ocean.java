@@ -5,9 +5,6 @@
  * by a 2D char array of ' ' characters.
  * Hit, miss, and boat markers are 
  * placed on it. 
- * 
- * @author Kyle McGlynn
- * @author Ajinkya Kolhe
  *
  */
 public class Ocean {

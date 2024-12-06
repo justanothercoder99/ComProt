@@ -7,8 +7,6 @@ import java.net.Socket;
 /**
  * This class handles communication via TCP
  * between the server and a player.
- * @author Kyle McGlynn
- * @author Ajinkya Kolhe
  *
  */
 @SuppressWarnings("serial")

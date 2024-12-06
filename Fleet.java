@@ -4,9 +4,6 @@ import java.util.Arrays;
  * The purpose of this class is
  * to create and managed a fleet
  * of ships for a game of battleship
- * 
- * @author Kyle McGlynn
- * @author Ajinkya Kolhe
  */
 
 public class Fleet {

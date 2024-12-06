@@ -1,8 +1,6 @@
 /**
  * This class stores the player name, 
  * ship marker, and hit marker.
- * @author Ajinkya Kolhe 
- * @author Kyle McGlynn
  */
 public class Player {
 

@@ -2,8 +2,6 @@
  * This class contains the logic for
  * a game of battle ship using the 
  * MVC design
- * @author   Ajinkya Kolhe
- * @author   Kyle McGlynn
  *
  */
 public class Control {
