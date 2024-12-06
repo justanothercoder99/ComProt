@@ -5,8 +5,6 @@ import java.util.Scanner;
  * This class is used to display
  * information about the game to the
  * player and to acquire user input.
- * @author   Ajinkya Kolhe
- * @author   Kyle McGlynn
  *
  */
 @SuppressWarnings("serial")

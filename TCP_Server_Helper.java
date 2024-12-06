@@ -9,8 +9,6 @@ import java.util.Arrays;
  * This class handles the connection to a
  * player for the server. It also contains part 
  * of the logic needed to play the game.
- * @author   Kyle McGlynn
- * @author   Ajinkya Kolhe
  * @author Aneesh Deshmukh
  *
  */

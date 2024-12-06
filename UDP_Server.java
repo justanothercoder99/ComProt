@@ -13,8 +13,6 @@ import java.net.SocketTimeoutException;
  * This class is a server in a game
  * of battle ship. It communicates to its
  * players via UDP.
- * @author   Ajinkya Kolhe
- * @author   Kyle McGlynn
  *
  */
 public class UDP_Server {

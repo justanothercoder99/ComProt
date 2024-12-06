@@ -10,8 +10,6 @@ import java.net.SocketTimeoutException;
  * A server for a game of battleship. This
  * class communicates with player's through
  * helper threads via TCP.
- * @author   Kyle McGlynn
- * @author   Ajinkya Kolhe
  * @author Aneesh Deshmukh
  * 
  */
