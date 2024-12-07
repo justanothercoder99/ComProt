@@ -3,6 +3,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 
 /**
  * This class handles communication via TCP
@@ -51,6 +52,67 @@ public class TCP_Communicator implements Serializable{
 		this.ois = ois;
 		view = new View();
 	}
+
+	public void sendData(Object data) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof int[]) {
+            Packet<int[]> packet = new Packet<>((int[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>((String) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+		try {
+            socket.setSoTimeout(30000);
+            Packet<Void> acknowledgment = (Packet<Void>) ois.readObject();
+            System.out.println("Received ACK for Packet ID: " + acknowledgment.getPacketId());
+			long delay = System.currentTimeMillis() - packetTimestamp;
+			System.out.println("Total Round Trip Time: " + delay + " ms");
+        } catch (SocketTimeoutException e) {
+            System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
+        }
+	}
+
+	public <T> Packet<T> receiveData() throws IOException, ClassNotFoundException {
+		socket.setSoTimeout(30000);
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+
+		Packet<Void> acknowledgment = new Packet<>(receivedPacket.getPacketId(), true);
+		oos.writeObject(acknowledgment);
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method asks the user to pick spots
@@ -71,16 +133,18 @@ public class TCP_Communicator implements Serializable{
 				
 				// Read from the server what length ship we
 				// are supposed to be creating
-				int length = ( int ) ois.readObject();
+				Packet<Integer> packet = receiveData();
+				int length = ( int ) packet.getObjectData();
 				
 				// Get the user's choice through View and send it
 				// to the server for verification
-				oos.writeObject( view.getPositions( playerName, length ) );
+				sendData( view.getPositions( playerName, length ) );
 				
 				// If the ship could be built in that position
 				// and in that direction, a boolean value of true
 				// will be returned.
-				if( (boolean) ois.readObject() ) {
+				Packet<Boolean> packet2 = receiveData();
+				if( (Boolean) packet2.getObjectData() ) {
 					ships++;
 				}
 			}
@@ -105,14 +169,16 @@ public class TCP_Communicator implements Serializable{
 			// If the server is all set, it will send
 			// a boolean value of true. If there were not enough
 			// players it will send a boolean value of false.
-			if( (boolean) ois.readObject() ){
+			Packet<Boolean> packet = receiveData();
+			if( (boolean) packet.getObjectData() ){
 			
 				// Set up the fleet
 				fleetSetUp();
 							
 				// Flag that controls if the game
 				// is still being played
-				boolean game = (boolean) ois.readObject();
+				Packet<Boolean> packet2 = receiveData();
+				boolean game = (boolean) packet2.getObjectData();
 				
 				// So long as no one has won, keep playing
 				while( game ) {
@@ -121,24 +187,32 @@ public class TCP_Communicator implements Serializable{
 					// value. Once it receives a value, it must
 					// be this player's turn. If the value is 
 					// false, then the game is over.
-					if( (boolean) ois.readObject() ){
+					Packet<Boolean> packet3 = receiveData();
+					if( (boolean) packet3.getObjectData() ){
 						// The player's ocean
-						view.message( (String) ois.readObject() );
-						view.message( (String) ois.readObject() );
+						Packet<String> pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
+						pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
 						
 						// The player's guesses
-						view.message( (String) ois.readObject() );
-						view.message( (String) ois.readObject() );
+						pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
+						pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
 						
 						// Get desired target
-						oos.writeObject( view.getInput(playerName) );
+						sendData( view.getInput(playerName) );
 						
 						// See if it was a hit or miss
-						view.message( ( String ) ois.readObject() );
+						pkt = receiveData();
+						view.message( ( String ) pkt.getObjectData() );
 
 						// The player's guesses
-						view.message( (String) ois.readObject() );
-						view.message( (String) ois.readObject() );
+						pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
+						pkt = receiveData();
+						view.message( (String) pkt.getObjectData() );
 					}
 					else{
 						game = false;
@@ -146,7 +220,8 @@ public class TCP_Communicator implements Serializable{
 				}
 				
 				// See who the winner is
-				view.message( (String) ois.readObject()); 
+				Packet<String> packet4 = receiveData();
+				view.message( (String) packet4.getObjectData()); 
 			}
 			else{
 				
