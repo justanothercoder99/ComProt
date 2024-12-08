@@ -17,6 +17,54 @@ import java.net.UnknownHostException;
  *
  */
 public class UDP_PlayerClient {
+
+	public void sendData(Object data, ObjectOutputStream oos) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>((String) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof UDP_Communicator) {
+            Packet<UDP_Communicator> packet = new Packet<>((UDP_Communicator) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+	}
+
+	public <T> Packet<T> receiveData(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method sets up the UDP connection
@@ -48,7 +96,7 @@ public class UDP_PlayerClient {
 			// Send the player's name to the server
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream( baos );
-			oos.writeObject(playerName);
+			sendData(playerName, oos);
 			byte[] send = baos.toByteArray();
 			
 			// A DatagramPacket to send to the server
@@ -69,7 +117,8 @@ public class UDP_PlayerClient {
 			// are useful in converting bytes back into objects
 			ByteArrayInputStream bais = new ByteArrayInputStream(packet.getData());
 			ObjectInputStream ois = new ObjectInputStream(bais);
-			UDP_Communicator communicate = (UDP_Communicator) ois.readObject();
+			Packet<UDP_Communicator> sub_packet = receiveData(ois);
+			UDP_Communicator communicate = (UDP_Communicator) sub_packet.getObjectData();
 			
 			// Set the timeout to infinity
 			socket.setSoTimeout(0);

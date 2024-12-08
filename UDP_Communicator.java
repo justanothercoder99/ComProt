@@ -57,6 +57,59 @@ public class UDP_Communicator implements Serializable{
 		this.socket = socket;
 		view = new View();
 	}
+
+	public void sendData(Object data, ObjectOutputStream oos) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>((String) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof int[]) {
+            Packet<int[]> packet = new Packet<>((int[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof UDP_Communicator) {
+            Packet<UDP_Communicator> packet = new Packet<>((UDP_Communicator) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+	}
+
+	public <T> Packet<T> receiveData(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method contains the logic
@@ -76,7 +129,7 @@ public class UDP_Communicator implements Serializable{
 			// Convert the object into bytes
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream( baos );
-			oos.writeObject( obj );
+			sendData( obj, oos );
 			oos.flush();
 			bufInput = baos.toByteArray();
 			oos.close();
@@ -87,6 +140,9 @@ public class UDP_Communicator implements Serializable{
 					server, serverPort );
 			socket.send( send );
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			System.out.println("Error attempting to send data of type " + obj.getClass());
 			e.printStackTrace();
 		}
 	}
@@ -113,7 +169,8 @@ public class UDP_Communicator implements Serializable{
 			// Convert the object from bytes into an object
 			ByteArrayInputStream bais = new ByteArrayInputStream( receive.getData() );
 			ObjectInputStream ois = new ObjectInputStream( bais );
-			Object result = ois.readObject();
+			Packet<Object> packet = receiveData(ois);
+			Object result = packet.getObjectData();
 			ois.close();
 			bais.close();
 			

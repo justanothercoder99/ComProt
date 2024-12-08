@@ -65,6 +65,59 @@ public class UDP_Server {
 		
 		model = new Model();
 	}
+
+	public void sendData(Object data, ObjectOutputStream oos) throws IOException, ClassNotFoundException {
+		int packetId;
+		long packetTimestamp;
+		
+		if (data instanceof Boolean) {
+            Packet<Boolean> packet = new Packet<>((boolean) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof Integer) {
+            Packet<Integer> packet = new Packet<>((Integer) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String) {
+            Packet<String> packet = new Packet<>((String) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof String[]) {
+            Packet<String> packet = new Packet<>((String[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof int[]) {
+            Packet<int[]> packet = new Packet<>((int[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else if (data instanceof UDP_Communicator) {
+            Packet<UDP_Communicator> packet = new Packet<>((UDP_Communicator) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        } else {
+            Packet<Object> packet = new Packet<>((Object[]) data);
+			packetId = packet.getPacketId();
+			packetTimestamp = packet.getTimestamp();
+			oos.writeObject( packet );
+        }
+
+		System.out.println("Sent Packet ID: " + packetId);
+	}
+
+	public <T> Packet<T> receiveData(ObjectInputStream ois) throws IOException, ClassNotFoundException {
+		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
+		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
+
+		System.out.println("Received Packet ID: " + receivedPacket.getPacketId());
+		System.out.println("Packet delay: " + delay + " ms");
+		return receivedPacket;
+	}
 	
 	/**
 	 * This method contains the logic
@@ -84,7 +137,7 @@ public class UDP_Server {
 			// Convert the object into bytes
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			ObjectOutputStream oos = new ObjectOutputStream( baos );
-			oos.writeObject( obj );
+			sendData(obj, oos);
 			oos.flush();
 			bufInput = baos.toByteArray();
 			oos.close();
@@ -96,6 +149,9 @@ public class UDP_Server {
 			server.send( send );
 		} catch (IOException e) {
 			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			System.out.println("Error attempting to send data of type " + obj.getClass());
+			e.printStackTrace();
 		}
 	}
 	
@@ -103,11 +159,10 @@ public class UDP_Server {
 	 * This method contains the logic
 	 * needed for receiving objects 
 	 * through UDP.
-	 * @param    player   the player to whom obj is sent
 	 * @return   Object   the object that is received through
 	 *                    the connection
 	 */
-	public Object receive(){
+	public Object receive(boolean isArray){
 		
 		try {
 			
@@ -121,7 +176,10 @@ public class UDP_Server {
 			// Convert the object from bytes into an object
 			ByteArrayInputStream bais = new ByteArrayInputStream( receive.getData() );
 			ObjectInputStream ois = new ObjectInputStream( bais );
-			Object result = ois.readObject();
+			Packet<Object> packet = receiveData(ois);
+			Object result;
+			if (isArray) result = packet.getObjectsArray();
+			else result = packet.getObjectData();
 			ois.close();
 			bais.close();
 			
@@ -172,7 +230,8 @@ public class UDP_Server {
 				// Convert the name from bytes into a String
 				ByteArrayInputStream bais = new ByteArrayInputStream( receive.getData() );
 				ObjectInputStream ois = new ObjectInputStream( bais );
-				String playerName = (String) ois.readObject();
+				Packet<String> packet = receiveData(ois);
+				String playerName = (String) packet.getObjectData();
 				
 				// Create a player object
 				players[player] = new Player( playerName, boatMarks[player], hitMarks[player]);
@@ -183,7 +242,7 @@ public class UDP_Server {
 				// Convert the UDP_Communicator object into bytes
 				ByteArrayOutputStream boas = new ByteArrayOutputStream();
 				ObjectOutputStream oos = new ObjectOutputStream( boas );
-				oos.writeObject( comms[player] );
+				sendData( comms[player], oos );
 				oos.flush();
 				byte[] commBuf = boas.toByteArray();
 								
@@ -265,7 +324,7 @@ public class UDP_Server {
 			// Array of Objects to hold the returned
 			// integer coordinates and String direction
 			send( new Integer(index), player );
-			Object[] inputs = (Object[]) receive();
+			Object[] inputs = (Object[]) receive(true);
 			row = (Integer) inputs[0];
 			column = (Integer) inputs[1];
 			direction = (String) inputs[2];
@@ -315,7 +374,7 @@ public class UDP_Server {
 			send( model.printOcean( turn + sign, false), turn );
 			
 			// Ask the current player where they want to attack
-			int[] target = (int[]) receive();
+			int[] target = (int[]) receive(false);
 						
 			// Check to see if it hit or not.If it returns true, 
 			// then it hit, otherwise it is a miss.
