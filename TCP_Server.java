@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Random;
 
 /**
  * A server for a game of battleship. This
@@ -46,6 +47,13 @@ public class TCP_Server {
 	
 	// Determines whose turn it is
 	static int sign = 1;
+
+	// Boolean to randomly drop packets
+	boolean dropPackets = false;
+	// Packet drop probability
+	double dropProbability = 0.1;
+	// Random number generator for checking if packet should be dropped 
+	Random random = new Random();
 	
 	/**
 	 * The constructor. It initializes the ServerSocket
@@ -71,37 +79,41 @@ public class TCP_Server {
 		int packetId;
 		long packetTimestamp;
 		
-		if (data instanceof Boolean) {
-            Packet<Boolean> packet = new Packet<>((boolean) data);
+		if (dropPackets && random.nextDouble() < dropProbability) {
+			System.out.println("Dropping packet");
+			packetId = -1;
+			packetTimestamp = 0;
+		} else if (data instanceof Boolean) {
+			Packet<Boolean> packet = new Packet<>((boolean) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else if (data instanceof Integer) {
-            Packet<Integer> packet = new Packet<>((Integer) data);
+		} else if (data instanceof Integer) {
+			Packet<Integer> packet = new Packet<>((Integer) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else if (data instanceof String) {
-            Packet<String> packet = new Packet<>((String) data);
+		} else if (data instanceof String) {
+			Packet<String> packet = new Packet<>((String) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else if (data instanceof String[]) {
-            Packet<String> packet = new Packet<>((String[]) data);
+		} else if (data instanceof String[]) {
+			Packet<String> packet = new Packet<>((String[]) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else if (data instanceof TCP_Communicator) {
-            Packet<TCP_Communicator> packet = new Packet<>((TCP_Communicator) data);
+		} else if (data instanceof TCP_Communicator) {
+			Packet<TCP_Communicator> packet = new Packet<>((TCP_Communicator) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        } else {
-            Packet<Object> packet = new Packet<>((Object[]) data);
+		} else {
+			Packet<Object> packet = new Packet<>((Object[]) data);
 			packetId = packet.getPacketId();
 			packetTimestamp = packet.getTimestamp();
 			oos.writeObject( packet );
-        }
+		}
 
 		System.out.println("Sent Packet ID: " + packetId);
 		try {
@@ -112,6 +124,7 @@ public class TCP_Server {
 			System.out.println("Total Round Trip Time: " + delay + " ms");
         } catch (SocketTimeoutException e) {
             System.out.println("Acknowledgment timeout for Packet ID: " + packetId);
+			sendData(data, oos, ois);
         }
 	}
 
@@ -350,6 +363,10 @@ public class TCP_Server {
 		
 		return players[winner].playerName + " has won!";
 	}
+
+	public void dropPackets() {
+		this.dropPackets = true;
+	}
 	
 	/**
 	 * The main method. It starts the server, listening
@@ -357,10 +374,13 @@ public class TCP_Server {
 	 * @param   args   command line arguments ( not used )
 	 */
 	public static void main( String [] args ) {
+		boolean simulate_packet_drop = (boolean) (args[0].equals("true"));
 		
 		// Create an object of this server
 		TCP_Server server = new TCP_Server();
-		
+		if (simulate_packet_drop) {
+			server.dropPackets();
+		}
 		// Set up the game
 		server.controlSetUp();
 	}

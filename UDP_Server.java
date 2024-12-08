@@ -8,6 +8,7 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.util.Random;
 
 /**
  * This class is a server in a game
@@ -50,6 +51,13 @@ public class UDP_Server {
 	// Determines whose turn it is
 	int sign = 1;
 
+	// Boolean to randomly drop packets
+	boolean dropPackets = false;
+	// Packet drop probability
+	double dropProbability = 0.1;
+	// Random number generator for checking if packet should be dropped 
+	Random random = new Random();
+
 	/**
 	 * The constructor. It initializes the DatagramSocket
 	 * and the model. 
@@ -66,6 +74,14 @@ public class UDP_Server {
 		model = new Model();
 	}
 
+	/**
+	 * This method contains the logic
+	 * needed to send objects through
+	 * UDP.
+	 * @param   obj     the object to be sent
+	 * @param   oos		the Object output steam for the server
+	 * 
+	 */
 	public void sendData(Object data, ObjectOutputStream oos) throws IOException, ClassNotFoundException {
 		int packetId;
 		long packetTimestamp;
@@ -110,6 +126,14 @@ public class UDP_Server {
 		System.out.println("Sent Packet ID: " + packetId);
 	}
 
+	/**
+	 * This method contains the logic
+	 * needed for receiving objects 
+	 * through UDP.
+	 * @param   ois       the Object input stream for the server
+	 * @return   Packet   the packet object that is received through
+	 *                    the connection
+	 */
 	public <T> Packet<T> receiveData(ObjectInputStream ois) throws IOException, ClassNotFoundException {
 		Packet<T> receivedPacket = (Packet<T>) ois.readObject();
 		long delay = System.currentTimeMillis() - receivedPacket.getTimestamp();
@@ -129,6 +153,10 @@ public class UDP_Server {
 	 */
 	public void send( Object obj, int player ) {
 		
+		if (dropPackets && random.nextDouble() < dropProbability) {
+			System.out.println("Dropping packet");
+			return;
+		} 
 		try {
 			
 			// Byte array to hold object we wish to send
@@ -162,7 +190,11 @@ public class UDP_Server {
 	 * @return   Object   the object that is received through
 	 *                    the connection
 	 */
-	public Object receive(boolean isArray){
+	public Object receive(boolean isArray) {
+		if (dropPackets && random.nextDouble() < dropProbability) {
+			System.out.println("Dropping packet");
+			return null;
+		}
 		
 		try {
 			
@@ -408,6 +440,10 @@ public class UDP_Server {
 		server.disconnect();
 		server.close();
 	}
+
+	public void dropPackets() {
+		this.dropPackets = true;
+	}
 	
 	/**
 	 * The main method. It sets up the server
@@ -416,7 +452,12 @@ public class UDP_Server {
 	 * @param   args   command line arguments ( not used )
 	 */
 	public static void main( String [] args ) {
+		boolean simulate_packet_drop = (boolean) (args[0].equals("true"));
+
 		UDP_Server server = new UDP_Server();
+		if (simulate_packet_drop) {
+			server.dropPackets();
+		}
 		if( server.controlSetUp() ) {
 			server.playGameWith();
 		}
